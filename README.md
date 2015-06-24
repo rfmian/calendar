@@ -1,4 +1,4 @@
-# temp
+# Calendar
 
 Please note: the central file is calendar.php - you may have a look on the calendar in action: http://www.meinstylist.com/wp-content/plugins/meinstylist-kernfunktionen/fullcalendar-2.3.1/calendar.php
 
