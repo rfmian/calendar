@@ -7,10 +7,10 @@ $_SESSION['uid'] = 848;
 <head>
 <meta charset='utf-8' />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href='fullcalendar.css' rel='stylesheet' />
-<link href='fullcalendar.print.css' rel='stylesheet' media='print' />
-<script src="fullcalendar-2.3.1/lib/moment.min.js"></script>
-<script src="fullcalendar-2.3.1/lib/jquery.min.js"></script>
+<link href='fullcalendar-2.3.1/fullcalendar.css' rel='stylesheet' />
+<link href='fullcalendar-2.3.1/fullcalendar.print.css' rel='stylesheet' media='print' />
+<script src='fullcalendar-2.3.1/lib/moment.min.js'></script>
+<script src='fullcalendar-2.3.1/lib/jquery.min.js'></script>
 <script src="fullcalendar-2.3.1/fullcalendar.js"></script>
 <script src="fullcalendar-2.3.1/lang-all.js"></script>
 <script src="jquery-popup-overlay-gh-pages/jquery.popupoverlay.js"></script>
@@ -71,14 +71,35 @@ $_SESSION['uid'] = 848;
 						});
 						$('#auto_oeffnungszeiten_bearbeiten').popup('show');
 					} else if (event.className == 'man_oeffnungszeiten_einm' || event.className == 'man_oeffnungszeiten_wied' || event.className == 'blockierungszeit_einm' || event.className == 'blockierungszeit_wied') {
-						var event_loeschen = $(document.createElement('div')).attr("id","event_loeschen").attr("class","popup_box").html('lädt...').load('/wp-content/plugins/meinstylist-kernfunktionen/fullcalendar-2.3.1/ajax.php?type=output&id=' + event.id + '&sid=<?php echo $_SESSION['uid']; ?>').appendTo(document.body);
-						$('#event_loeschen').popup({
-						  transition: 'all 0.3s',
-						  escape: false,
-						  blur: false,
-						  autozindex: true
+						var event_loeschen = document.createElement('div');
+						event_loeschen.id = 'event_loeschen';
+						event_loeschen.className = 'popup_box';
+						
+						$.get('/wp-content/plugins/meinstylist-kernfunktionen/fullcalendar-2.3.1/ajax.php',{
+							type: 'output',
+							sid: <?php echo $_SESSION['uid'] ?>,
+							id: event.id
+						},function(data) {
+							event_loeschen.innerHTML = data;
+							document.body.appendChild(event_loeschen);
+							$('#event_loeschen').popup({
+							  transition: 'all 0.3s',
+							  escape: false,
+							  blur: false,
+							  autozindex: true
+							});
+							$('#event_loeschen').popup('show');
+						}).fail(function () {
+							event_loeschen.innerHTML = '<h1 style="margin-top:0;text-align:center;">Verbindungsfehler</h1><p>Bitte überprüfen Sie Ihre Internetverbindung.</p><button class="loeschen" onclick="event_loeschen_abbrechen()" style="width:100%;">Abbrechen</button>';
+							document.body.appendChild(event_loeschen);
+							$('#event_loeschen').popup({
+							  transition: 'all 0.3s',
+							  escape: false,
+							  blur: false,
+							  autozindex: true
+							});
+							$('#event_loeschen').popup('show');
 						});
-						$('#event_loeschen').popup('show');
 					} else {
 						// TO DO
 						popup_open = false;
@@ -357,6 +378,30 @@ $_SESSION['uid'] = 848;
 			popup_open = false;
 		}
 	}
+	function event_loeschen_abbrechen() {
+		$('#event_loeschen').popup('hide');
+		$('#event_loeschen').remove();
+		popup_open = false;
+	}
+	function event_loeschen_ausfuehren(id) {					
+		$.post('/wp-content/plugins/meinstylist-kernfunktionen/fullcalendar-2.3.1/ajax.php?type=loeschen',{
+			sid: <?php echo $_SESSION['uid'] ?>,
+			id: id
+		},function(data) {
+			if (data == "ok") {
+				$('#event_loeschen').popup('hide');
+				$('#event_loeschen').remove();
+				$('#calendar').fullCalendar('refetchEvents')
+				popup_open = false;
+			} else if (data == "schon_geloescht") {
+				document.getElementById('event_loeschen_fehlermeldungsausgabe').innerHTML = '<strong>Fehler:</strong> Sie haben diesen Datensatz bereits gelöscht.';
+			} else {
+				document.getElementById('event_loeschen_fehlermeldungsausgabe').innerHTML = '<strong>Fehler:</strong> Es ist ein unvorhergesehener Fehler eingetreten. Bitte versuchen Sie es später wieder.';
+			}
+		}).fail(function () {
+			document.getElementById('event_loeschen_fehlermeldungsausgabe').innerHTML = '<strong>Fehler:</strong> Es ist ein Problem mit Ihrer Internetverbindung eingetreten. Bitte versuchen Sie es später wieder.';
+		});
+	}
 </script>
 <style>
 body {
@@ -415,10 +460,10 @@ body {
 	cursor: pointer;
 	background-color: #a0a0a0;
 }
-.popup_box button.speichern {
+.popup_box button.speichern, .popup_box button.loeschen {
 	background-color: #373737;
 }
-.popup_box button.speichern:hover {
+.popup_box button.speichern:hover, .popup_box button.loeschen:hover {
 	cursor: pointer;
 	background-color: #2B2B2B;
 }
